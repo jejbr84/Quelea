@@ -133,7 +133,7 @@ public class LyricDrawer extends WordDrawer {
                 fontSize = result.getFontSize();
             }
         } else {
-            newText = sanctifyText(text, translations);
+            newText = sanctifyText(text, translations, capitaliseFirst);
         }
         if (fontSize == -1) {
             fontSize = pickFontSize(font, newText, getCanvas().getWidth() * QueleaProperties.get().getLyricWidthBounds(), getCanvas().getHeight() * QueleaProperties.get().getLyricHeightBounds());
@@ -453,7 +453,7 @@ public class LyricDrawer extends WordDrawer {
      * <p/>
      * @return processed, sanctified text that can be displayed nicely.
      */
-    private List<LyricLine> sanctifyText(String[] linesArr, String[] translationArr) {
+    public static List<LyricLine> sanctifyText(String[] linesArr, String[] translationArr, boolean capitaliseFirst) {
         List<LyricLine> finalLines = new ArrayList<>();
         int translationOffset = 0;
         for (int i = 0; i < linesArr.length; i++) {
@@ -477,7 +477,7 @@ public class LyricDrawer extends WordDrawer {
             if ((translationArr != null && translationArr.length > 0)) {
                 ret.add(line);
             } else {
-                List<String> splits = splitLine(line.getLine(), maxLength);
+                List<String> splits = splitLine(line.getLine(), maxLength, capitaliseFirst);
                 for (String split : splits) {
                     ret.add(new LyricLine(split));
                 }
@@ -493,23 +493,23 @@ public class LyricDrawer extends WordDrawer {
      * @return the split line (or the unaltered line if it is less than or equal
      * to the allowed length.
      */
-    private List<String> splitLine(String line, int maxLength) {
+    private static List<String> splitLine(String line, int maxLength, boolean capitaliseFirst) {
         List<String> sections = new ArrayList<>();
         if (line.length() > maxLength) {
             if (containsNotAtEnd(line, ";")) {
                 for (String s : splitMiddle(line, ';')) {
-                    sections.addAll(splitLine(s, maxLength));
+                    sections.addAll(splitLine(s, maxLength, capitaliseFirst));
                 }
             } else if (containsNotAtEnd(line, ",")) {
                 for (String s : splitMiddle(line, ',')) {
-                    sections.addAll(splitLine(s, maxLength));
+                    sections.addAll(splitLine(s, maxLength, capitaliseFirst));
                 }
             } else if (containsNotAtEnd(line, " ")) {
                 for (String s : splitMiddle(line, ' ')) {
-                    sections.addAll(splitLine(s, maxLength));
+                    sections.addAll(splitLine(s, maxLength, capitaliseFirst));
                 }
             } else {
-                sections.addAll(splitLine(new StringBuilder(line).insert(line.length() / 2, " ").toString(), maxLength));
+                sections.addAll(splitLine(new StringBuilder(line).insert(line.length() / 2, " ").toString(), maxLength, capitaliseFirst));
             }
         } else {
             line = line.trim();
@@ -570,7 +570,7 @@ public class LyricDrawer extends WordDrawer {
                 if (translationLyrics != null) {
                     translationArr = translationLyrics.split("\n");
                 }
-                processedText = sanctifyText(textArr, translationArr);
+                processedText = sanctifyText(textArr, translationArr, capitaliseFirst);
                 newSize = pickFontSize(font, processedText, width, height);
                 if (newSize < fontSize) {
                     fontSize = newSize;

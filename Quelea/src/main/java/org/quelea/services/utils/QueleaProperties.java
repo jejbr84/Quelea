@@ -1094,6 +1094,10 @@ public final class QueleaProperties extends Properties {
         return Integer.parseInt(getProperty("max.chars", "30"));
     }
 
+    public int getMaxLines() {
+        return Integer.parseInt(getProperty("max.lines", "0"));
+    }
+
     /**
      * Set the max chars value.
      * <p>

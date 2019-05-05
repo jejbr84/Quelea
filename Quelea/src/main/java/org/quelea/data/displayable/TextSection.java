@@ -43,6 +43,7 @@ public class TextSection implements Serializable {
     private final String[] smallLines;
     private ThemeDTO theme;
     private final boolean capitaliseFirst;
+    private final boolean isSubSection;
 
     public TextSection(TextSection orig) {
         this.title = orig.title;
@@ -50,6 +51,7 @@ public class TextSection implements Serializable {
         this.smallLines = orig.smallLines;
         this.theme = orig.theme;
         this.capitaliseFirst = orig.capitaliseFirst;
+        this.isSubSection = orig.isSubSection;
     }
 
     /**
@@ -63,7 +65,11 @@ public class TextSection implements Serializable {
      * a capital, false otherwise.
      */
     public TextSection(String title, String[] lines, String[] smallLines, boolean capitaliseFirst) {
-        this(title, lines, smallLines, capitaliseFirst, null);
+        this(title, lines, smallLines, capitaliseFirst, null, false);
+    }
+
+    public TextSection(String title, String[] lines, String[] smallLines, boolean capitaliseFirst, ThemeDTO theme) {
+        this(title, lines, smallLines, capitaliseFirst, theme, false);
     }
 
     /**
@@ -77,7 +83,7 @@ public class TextSection implements Serializable {
      * a capital, false otherwise.
      * @param theme the theme of this song section.
      */
-    public TextSection(String title, String[] lines, String[] smallLines, boolean capitaliseFirst, ThemeDTO theme) {
+    public TextSection(String title, String[] lines, String[] smallLines, boolean capitaliseFirst, ThemeDTO theme, boolean isSubSection) {
         this.capitaliseFirst = capitaliseFirst;
         this.title = title;
         this.lines = Arrays.copyOf(lines, lines.length);
@@ -86,6 +92,7 @@ public class TextSection implements Serializable {
         }
         this.smallLines = Arrays.copyOf(smallLines, smallLines.length);
         this.theme = theme;
+        this.isSubSection = isSubSection;
     }
 
     /**
@@ -232,6 +239,11 @@ public class TextSection implements Serializable {
             }
         }
         return ret.toArray(new String[ret.size()]);
+    }
+    
+    public boolean isSubSection()
+    {
+        return isSubSection;
     }
 
     /**

@@ -46,8 +46,10 @@ import org.quelea.data.ThemeDTO;
 import org.quelea.data.db.SongManager;
 import org.quelea.services.utils.LineTypeChecker;
 import org.quelea.services.utils.LoggerUtils;
+import org.quelea.services.utils.LyricLine;
 import org.quelea.services.utils.QueleaProperties;
 import org.quelea.services.utils.Utils;
+import org.quelea.windows.lyrics.LyricDrawer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -374,6 +376,7 @@ public class SongDisplayable implements TextDisplayable, Comparable<SongDisplaya
      */
     public void setCurrentTranslationLyrics(String currentTranslation) {
         this.currentTranslation = currentTranslation;
+        refreshLyrics();
     }
 
     /**
@@ -675,14 +678,22 @@ public class SongDisplayable implements TextDisplayable, Comparable<SongDisplaya
      */
     public String getLyrics(boolean chords, boolean comments) {
         StringBuilder ret = new StringBuilder();
+        boolean firstLoop = true;
         for (TextSection section : sections) {
+            // Only append a new line if the section is not a sub-section. All sub-sections should be attached
+            // to the main section in the lyrics (one block). The firstLoop variable ensures the section does
+            // not start with a new line.
+            if (!firstLoop && !section.isSubSection())
+            {
+                ret.append("\n");
+            }
             if (section.getTitle() != null && !section.getTitle().equals("")) {
                 ret.append(section.getTitle()).append("\n");
             }
             for (String line : section.getText(chords, comments)) {
                 ret.append(line).append("\n");
             }
-            ret.append("\n");
+            firstLoop = false;
         }
         return ret.toString().replaceAll("\\s+$", "").replace(" ", "<>");
     }
@@ -757,7 +768,38 @@ public class SongDisplayable implements TextDisplayable, Comparable<SongDisplaya
                 smallLinesList.add("CCLI License #" + churchCcliNum);
                 smallLines = smallLinesList.toArray(new String[smallLinesList.size()]);
             }
-            sections.add(new TextSection(sectionTitle, newLyrics, smallLines, true));
+            
+            // Limit the section to a maximum number of lines and create sub-sections if necessary.
+            int maxLines = QueleaProperties.get().getMaxLines();
+            boolean isSubSection = false;
+            // Only limit the line count if the maximum is set.
+            // Does currently not work with translations.
+            if (maxLines > 0 && (currentTranslation == null || currentTranslation.isEmpty())) {
+                List<String> newLyricsLineLimit = new ArrayList<String>();
+                int lineCount = 0;
+                for (String line : newLyrics) {
+                    // Get the number of displayed lines when wrapped.
+                    List<LyricLine> wrappedLines = LyricDrawer.sanctifyText(new String[] {line}, null, false);
+                    lineCount += wrappedLines.size();
+                    if (lineCount > maxLines && !newLyricsLineLimit.isEmpty()) {
+                        // Section is full and there is at least one line in this section.
+                        // Add this section and make the rest sub-sections.
+                        sections.add(new TextSection(sectionTitle, newLyricsLineLimit.toArray(new String[0]), smallLines, true, null, isSubSection));
+                        newLyricsLineLimit.clear();
+                        lineCount = wrappedLines.size();
+                        sectionTitle = "";
+                        isSubSection = true;
+                    }
+                    newLyricsLineLimit.add(line);
+                }
+
+                // Add the last (sub-)section.
+                if (!newLyricsLineLimit.isEmpty()) {
+                    sections.add(new TextSection(sectionTitle, newLyricsLineLimit.toArray(new String[0]), smallLines, true, null, isSubSection));
+                }
+            } else {
+                sections.add(new TextSection(sectionTitle, newLyrics, smallLines, true));
+            }
         }
     }
 
